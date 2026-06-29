@@ -1,8 +1,14 @@
-FROM eclipse-temurin:21-jre
-
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 
-ARG JAR_FILE=target/ms-gateway-0.0.1-SNAPSHOT.jar
-COPY ${JAR_FILE} app.jar
+COPY pom.xml .
+COPY src ./src
+
+RUN mvn clean package -DskipTests
+
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+
+COPY --from=build /app/target/*.jar app.jar
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
