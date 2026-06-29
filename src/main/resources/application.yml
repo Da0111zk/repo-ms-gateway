@@ -1,0 +1,77 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ms-gateway
+  # 🔽 Esto evita que el Gateway falle buscando una base de datos inexistente
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        - id: ms-kardex
+          uri: http://ms-kardex:8086
+          predicates:
+            - Path=/api/kardex,/api/kardex/**
+
+        - id: ms-categorias
+          uri: http://ms-categorias:8081
+          predicates:
+            - Path=/api/categorias,/api/categorias/**
+
+        - id: ms-productos
+          uri: http://ms-productos:8082
+          predicates:
+            - Path=/api/productos,/api/productos/**
+
+        - id: ms-bodega
+          uri: http://ms-bodega:8085
+          predicates:
+            - Path=/api/ubicaciones,/api/ubicaciones/**
+
+        - id: ms-ingresos
+          uri: http://ms-ingresos:8084
+          predicates:
+            - Path=/api/ingresos,/api/ingresos/**
+
+        - id: ms-egresos
+          uri: http://ms-egresos:8083
+          predicates:
+            - Path=/api/egresos,/api/egresos/**
+
+        - id: ms-ajuste
+          uri: http://ms-ajuste:8088
+          predicates:
+            - Path=/api/ajustes,/api/ajustes/**
+
+        - id: ms-traslados
+          uri: http://ms-traslados:8087
+          predicates:
+            - Path=/api/traslados,/api/traslados/**
+
+        - id: ms-usuarios
+          uri: http://ms-usuarios:8090
+          predicates:
+            - Path=/api/usuarios,/api/usuarios/**
+
+        - id: ms-proveedores
+          uri: http://ms-proveedores:8089
+          predicates:
+            - Path=/api/proveedores,/api/proveedores/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://eureka-server:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
