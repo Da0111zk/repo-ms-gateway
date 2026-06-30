@@ -4,74 +4,140 @@ server:
 spring:
   application:
     name: ms-gateway
-  # 🔽 Esto evita que el Gateway falle buscando una base de datos inexistente
-  autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
   cloud:
     gateway:
       discovery:
         locator:
-          enabled: false
+          enabled: true
+          lower-case-service-id: true
       routes:
-        - id: ms-kardex
-          uri: http://ms-kardex:8086
+        - id: ms-usuarios
+          uri: lb://ms-usuarios
           predicates:
-            - Path=/api/kardex,/api/kardex/**
+            - Path=/api/usuarios/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: usuariosCB
+                fallbackUri: forward:/fallback/usuarios
 
         - id: ms-categorias
-          uri: http://ms-categorias:8081
+          uri: lb://ms-categorias
           predicates:
-            - Path=/api/categorias,/api/categorias/**
-
-        - id: ms-productos
-          uri: http://ms-productos:8082
-          predicates:
-            - Path=/api/productos,/api/productos/**
+            - Path=/api/categorias/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: categoriasCB
+                fallbackUri: forward:/fallback/categorias
 
         - id: ms-bodega
-          uri: http://ms-bodega:8085
+          uri: lb://ms-bodega
           predicates:
-            - Path=/api/ubicaciones,/api/ubicaciones/**
-
-        - id: ms-ingresos
-          uri: http://ms-ingresos:8084
-          predicates:
-            - Path=/api/ingresos,/api/ingresos/**
-
-        - id: ms-egresos
-          uri: http://ms-egresos:8083
-          predicates:
-            - Path=/api/egresos,/api/egresos/**
-
-        - id: ms-ajuste
-          uri: http://ms-ajuste:8088
-          predicates:
-            - Path=/api/ajustes,/api/ajustes/**
-
-        - id: ms-traslados
-          uri: http://ms-traslados:8087
-          predicates:
-            - Path=/api/traslados,/api/traslados/**
-
-        - id: ms-usuarios
-          uri: http://ms-usuarios:8090
-          predicates:
-            - Path=/api/usuarios,/api/usuarios/**
+            - Path=/api/ubicaciones/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: bodegaCB
+                fallbackUri: forward:/fallback/bodega
 
         - id: ms-proveedores
-          uri: http://ms-proveedores:8089
+          uri: lb://ms-proveedores
           predicates:
-            - Path=/api/proveedores,/api/proveedores/**
+            - Path=/api/proveedores/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: proveedoresCB
+                fallbackUri: forward:/fallback/proveedores
+
+        - id: ms-producto
+          uri: lb://ms-producto
+          predicates:
+            - Path=/api/productos/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: productoCB
+                fallbackUri: forward:/fallback/producto
+
+        - id: ms-kardex
+          uri: lb://ms-kardex
+          predicates:
+            - Path=/api/kardex/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: kardexCB
+                fallbackUri: forward:/fallback/kardex
+
+        - id: ms-ingresos
+          uri: lb://ms-ingresos
+          predicates:
+            - Path=/api/ingresos/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: ingresosCB
+                fallbackUri: forward:/fallback/ingresos
+
+        - id: ms-egresos
+          uri: lb://ms-egresos
+          predicates:
+            - Path=/api/egresos/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: egresosCB
+                fallbackUri: forward:/fallback/egresos
+
+        - id: ms-ajuste
+          uri: lb://ms-ajuste
+          predicates:
+            - Path=/api/ajustes/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: ajusteCB
+                fallbackUri: forward:/fallback/ajuste
+
+        - id: ms-traslados
+          uri: lb://ms-traslados
+          predicates:
+            - Path=/api/traslados/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: trasladosCB
+                fallbackUri: forward:/fallback/traslados
 
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_URL:http://eureka-server:8761/eureka/}
-  instance:
-    prefer-ip-address: true
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+    register-with-eureka: true
+    fetch-registry: true
+    enabled: true
+    healthcheck:
+      enabled: true
+instance:
+    prefer-ip-address: false
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:ms-gateway-k273.onrender.com}
+    instance-id: ${spring.application.name}:${random.value}
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
 
 management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,info,gateway
+  endpoint:
+    gateway:
+      enabled: true
+    health:
+      show-details: always
+
+spring.cloud.gateway.httpclient:
+  connect-timeout: 10000
+  response-timeout: 30s
